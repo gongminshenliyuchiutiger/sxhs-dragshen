@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雙溪撈神遊戲系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        /* Theme CSS Variables will be inserted here */
+        :root {
+            --body-bg: linear-gradient(135deg, #ff7e5f, #feb47b, #84fab0, #8fd3f4);
+            --body-text-color: #333333;
+            --wrapper-bg: rgba(255, 255, 255, 0.9);
+            --wrapper-border: 1px solid rgba(128, 0, 128, 0.3);
+            --wrapper-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 100, 200, 0.4);
+            --wrapper-text-color: #333333;
+            --wrapper-h1-color: #8e2de2;
+            --canvas-bg: linear-gradient(180deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+            --canvas-border: 4px solid #ff1493;
+            --canvas-shadow: inset 0 0 15px rgba(255, 20, 147, 0.7);
+            --status-item-bg: rgba(0, 0, 0, 0.05);
+            --status-item-border: 1px solid rgba(0, 0, 0, 0.1);
+            --status-level-bg: rgba(255, 192, 203, 0.2);
+            --status-level-border: rgba(255, 192, 203, 0.4);
+            --status-timer-bg: rgba(173, 216, 230, 0.2);
+            --status-timer-border: rgba(173, 216, 230, 0.4);
+            --status-score-bg: rgba(144, 238, 144, 0.2);
+            --status-score-border: rgba(144, 238, 144, 0.4);
+            --status-level-text: #ff69b4;
+            --status-timer-text: #87cefa;
+            --status-score-text: #32cd32;
+            --mission-bg: rgba(128, 0, 128, 0.4);
+            --mission-border: 4px solid #ff69b4;
+            --mission-text-color: #333333;
+            --mission-h2-color: #8e2de2;
+            --mission-target-icon-color: #008000;
+            --mission-target-text-color: #008000;
+            --mission-forbidden-icon-color: #b22222;
+            --mission-forbidden-text-color: #b22222;
+            --mission-level-name-color: #696969;
+            --button-bg: linear-gradient(145deg, #ff1493, #8a2be2);
+            --button-color: #ffffff;
+            --button-shadow: 0 4px 15px rgba(255, 20, 147, 0.5), 0 0 20px rgba(138, 43, 226, 0.7);
+            --button-hover-shadow: 0 6px 20px rgba(255, 20, 147, 0.8), 0 0 30px rgba(138, 43, 226, 0.9);
+            --modal-bg: #f08080;
+            --modal-border: 1px solid rgba(255, 100, 200, 0.6);
+            --modal-shadow: 0 0 30px rgba(255, 20, 147, 0.6);
+            --modal-h2-color: #8a2be2;
+            --modal-h3-color: #32cd32;
+            --modal-close-color: #ffffff;
+            --modal-hover-close-color: #000000;
+            --title-instructions-button-color: #ff69b4;
+            --title-instructions-button-hover-color: #ff1493;
+            --score-positive-color: #008000;
+            --score-negative-color: #b22222;
+            --particle-positive-color: #ff0000;
+            --screen-flash-color: rgba(255, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--body-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            color: var(--body-text-color);
+            transition: background-color 0.5s;
+            position: relative;
+            overflow-x: hidden; /* Prevent horizontal scroll due to particle effects */
+        }
+
+        #game-wrapper {
+            background-color: var(--wrapper-bg);
+            backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+            -webkit-backdrop-filter: blur(10px); /* 兼容 Safari */
+            border-radius: 1.5rem;
+            box-shadow: var(--wrapper-shadow);
+            width: 95vw;
+            max-width: 700px;
+            padding: 1.5rem;
+            z-index: 10;
+            border: var(--wrapper-border);
+            color: var(--wrapper-text-color);
+        }
+
+        #game-wrapper h1 {
+            color: var(--wrapper-h1-color);
+        }
+
+        #canvas-container {
+            position: relative;
+            background: var(--canvas-bg);
+            border-radius: 1rem;
+            border: var(--canvas-border);
+            overflow: hidden;
+            touch-action: none;
+            min-height: 400px;
+            box-shadow: var(--canvas-shadow);
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+            cursor: pointer;
+        }
+
+        .status-bar-item {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            color: var(--body-text-color); /* Use body text color for consistency */
+            background-color: var(--status-item-bg);
+            border: var(--status-item-border);
+        }
+        /* 特殊狀態欄顏色 */
+        .status-bar-item#level-display-wrapper { background-color: var(--status-level-bg); border-color: var(--status-level-border); }
+        .status-bar-item#level-display-wrapper span:first-child { color: var(--status-level-text); }
+        .status-bar-item#timer-display-wrapper { background-color: var(--status-timer-bg); border-color: var(--status-timer-border); }
+        .status-bar-item#timer-display-wrapper span:first-child { color: var(--status-timer-text); }
+        .status-bar-item#score-display-wrapper { background-color: var(--status-score-bg); border-color: var(--status-score-border); }
+        .status-bar-item#score-display-wrapper span:first-child { color: var(--status-score-text); }
+
+
+        .game-button {
+            padding: 0.6rem 2rem;
+            background: var(--button-bg);
+            color: var(--button-color);
+            font-weight: 900;
+            font-size: 1.1rem;
+            border-radius: 9999px;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--button-shadow);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .game-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--button-hover-shadow);
+        }
+
+        /* 遊戲說明書樣式 */
+        #instructions-modal {
+            background-color: rgba(0, 0, 0, 0.85); /* 更深的半透明背景 */
+            z-index: 50;
+        }
+        #instructions-modal .modal-content { /* 自定義 class 避免 Tailwind 衝突 */
+            background-color: var(--modal-bg);
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: var(--modal-border);
+            box-shadow: var(--modal-shadow);
+        }
+        #instructions-modal h2 {
+            color: var(--modal-h2-color);
+        }
+        #instructions-modal h3 {
+            color: var(--modal-h3-color);
+        }
+        #instructions-modal button.absolute {
+            color: var(--modal-close-color);
+        }
+        #instructions-modal button.absolute:hover {
+            color: var(--modal-hover-close-color);
+        }
+
+
+        /* 遊戲按鈕覆蓋層 */
+        #game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 20;
+            background: rgba(30,30,50,0.6); /* 輕微背景，讓文字更清晰 */
+            border-radius: 1rem;
+            transition: opacity 0.3s ease-in-out;
+            opacity: 1;
+        }
+
+        #game-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+        #game-overlay:not(.hidden) {
+            display: flex;
+        }
+
+        #game-overlay > * {
+            pointer-events: auto;
+        }
+
+        /* 主標題內的說明按鈕 */
+        #title-instructions-button {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            color: var(--title-instructions-button-color);
+            transition: color 0.2s;
+        }
+        #title-instructions-button:hover {
+            color: var(--title-instructions-button-hover-color);
+        }
+        @media (min-width: 640px) {
+            #title-instructions-button {
+                right: 1rem;
+            }
+        }
+
+        /* 物品小圖標在文字中的樣式 */
+        .item-icon-inline {
+            height: 1.5em;
+            width: auto;
+            vertical-align: middle;
+            margin: 0 0.2em;
+            display: inline-block;
+        }
+        /* 確保每個任務項目的圖片和文字不會斷開 */
+        .mission-item-wrapper {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+            margin-right: 1rem;
+        }
+        /* 任務目標區的文字 flex 容器 */
+        #mission-display .flex-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        #mission-display {
+            background-color: var(--mission-bg);
+            border-left: var(--mission-border);
+            color: var(--mission-text-color);
+        }
+        #mission-display h2 {
+            color: var(--mission-h2-color);
+        }
+        #mission-display .fa-camera-retro {
+            color: var(--mission-target-icon-color);
+        }
+        #mission-display #targets {
+            color: var(--mission-target-text-color);
+        }
+        #mission-display .fa-ban {
+            color: var(--mission-forbidden-icon-color);
+        }
+        #mission-display #forbidden {
+            color: var(--mission-forbidden-text-color);
+        }
+        #mission-display #level-name {
+            color: var(--mission-level-name-color);
+        }
+
+
+        /* Feedback effects */
+        .score-popup {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff; /* Base white, overridden by positive/negative */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            pointer-events: none;
+            animation: fadeOutUp 1s forwards;
+            z-index: 30;
+        }
+
+        @keyframes fadeOutUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(0.7); opacity: 0; }
+        }
+
+        .particle-effect {
+            position: absolute;
+            background-color: var(--particle-positive-color); /* Default to positive particle color */
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            animation: particle-burst 0.8s forwards;
+            z-index: 30;
+        }
+
+        @keyframes particle-burst {
+            0% { transform: scale(0) translate(0, 0); opacity: 1; }
+            50% { transform: scale(1) translate(var(--dx), var(--dy)); opacity: 1; }
+            100% { transform: scale(0) translate(var(--dx), var(--dy)); opacity: 0; }
+        }
+
+        .screen-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--screen-flash-color);
+            opacity: 0;
+            pointer-events: none;
+            animation: flashRed 0.2s forwards;
+            z-index: 40;
+        }
+
+        @keyframes flashRed {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Game Over buttons container style */
+        #game-over-buttons {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically by default */
+            gap: 1rem;
+            margin-top: 1.5rem;
+            align-items: center;
+        }
+        @media (min-width: 640px) { /* On larger screens, arrange horizontally */
+            #game-over-buttons {
+                flex-direction: row;
+            }
+        }
+
+        /* --- 新增的吉祥物和音樂控制樣式 --- */
+        #mascot-fixed {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            width: 80px; 
+            height: auto;
+            cursor: pointer;
+            z-index: 5; 
+            transition: transform 0.2s ease-out, filter 0.2s ease-out; 
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); /* 輕微陰影 */
+        }
+
+        @keyframes natural-glow {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(0, 196, 255, 0.5)); } /* 霓虹藍光 */
+            50% { transform: scale(1.02); filter: drop-shadow(0 0 15px rgba(138, 43, 226, 0.7)); } /* 鮮豔紫光 */
+        }
+
+        #mascot-fixed:hover {
+            animation: natural-glow 1.5s infinite ease-in-out; 
+        }
+
+        #music-controls {
+            background-color: rgba(30, 30, 50, 0.7); /* 半透明深色 */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 196, 255, 0.2);
+            padding: 0.75rem 1.5rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #e0e7ff; /* 淺藍色文字 */
+            border: 1px solid rgba(120, 80, 255, 0.3);
+            z-index: 10;
+        }
+        #music-toggle-button {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            color: #00c4ff; /* 霓虹藍 */
+            transition: color 0.2s;
+        }
+        #music-toggle-button:hover {
+            color: #8a2be2; /* 鮮豔紫 */
+        }
+        #music-volume-slider {
+            width: 80px;
+            height: 8px;
+            background: transparent; 
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none; 
+            appearance: none;
+            /* 初始背景由JS設定 */
+        }
+        /* 針對 Webkit 瀏覽器 (Chrome, Safari) 的滑桿軌道 */
+        #music-volume-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            background: transparent; /* 讓JS控制背景 */
+            border-radius: 4px;
+            -webkit-appearance: none; 
+        }
+        /* 針對 Firefox 的滑桿軌道 */
+        #music-volume-slider::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            background: transparent; /* 讓JS控制背景 */
+            border-radius: 4px;
+        }
+        #music-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e0e7ff; /* 淺藍色 */
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0, 196, 255, 0.7);
+            margin-top: -4px; 
+        }
+        #music-volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e0e7ff; /* 淺藍色 */
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0, 196, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <h1 class="text-3xl font-extrabold mb-4 text-center relative">
+            雙溪撈神遊戲系統
+            <button id="title-instructions-button" onclick="toggleInstructions()">
+                <i class="fas fa-info-circle text-2xl"></i>
+            </button>
+        </h1>
+
+        <!-- 狀態欄：關卡、時間、分數 -->
+        <div class="flex justify-between items-center mb-4 p-2 rounded-xl" style="background-color: var(--status-item-bg); border: var(--status-item-border);">
+            <div id="level-display-wrapper" class="status-bar-item"><span class="">關卡:</span> <span id="level-display">0</span></div>
+            <div id="timer-display-wrapper" class="status-bar-item text-2xl"><span class="">時間:</span> <span id="timer-display">0.0</span>s</div>
+            <div id="score-display-wrapper" class="status-bar-item"><span class="">得分:</span> <span id="score-display">0</span></div>
+        </div>
+
+        <!-- 任務目標區 -->
+        <div id="mission-display" class="mb-4 p-4 rounded-lg text-white">
+            <h2 class="text-xl font-bold mb-2"><i class="fas fa-bullseye"></i> 任務目標:</h2>
+            <div class="flex flex-wrap text-lg">
+                <p><i class="fas fa-camera-retro"></i> 撈取: <span id="targets" class="font-bold">...</span></p>
+                <p class="ml-4"><i class="fas fa-ban"></i> 避開: <span id="forbidden" class="font-bold">...</span></p>
+            </div>
+            <p id="level-name" class="text-sm mt-2 italic">遊戲尚未開始</p>
+        </div>
+
+        <!-- 畫布容器 -->
+        <div id="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+            <!-- 遊戲訊息與按鈕覆蓋層 -->
+            <div id="game-overlay">
+                <p id="game-message" class="text-lg text-white mb-4 text-center drop-shadow-lg"></p>
+                <div id="game-over-buttons">
+                    <button id="start-button" class="game-button"></button>
+                    <!-- New buttons for game over states -->
+                    <button id="restart-level-button" class="game-button hidden">重試本關</button>
+                    <button id="back-to-first-level-button" class="game-button hidden">回到第一關</button>
+                </div>
+            </div>
+            <!-- Feedback elements will be dynamically added here -->
+        </div>
+
+    </div>
+
+    <!-- 背景音樂控制區 -->
+    <div id="music-controls">
+        <button id="music-toggle-button">
+            <i class="fas fa-volume-up"></i> <!-- 初始為播放狀態 -->
+        </button>
+        <input type="range" id="music-volume-slider" min="0" max="1" step="0.05" value="0.3">
+    </div>
+
+    <!-- 吉祥物圖片 (頁面左下角固定) -->
+    <img id="mascot-fixed" src="image/LiyuChillGuy.svg" alt="吉祥物LiyuChillGuy">
+
+    <!-- 版權資訊 -->
+    <footer class="mt-8 text-center text-gray-400 text-sm py-4">
+        <p>Copyright © Liyuchiutiger Gongminshen</p>
+    </footer>
+
+    <!-- 遊戲說明書 Modal -->
+    <div id="instructions-modal" class="fixed inset-0 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content rounded-lg p-6 max-w-lg w-full text-white shadow-xl relative">
+            <h2 class="text-2xl font-bold mb-4"><i class="fas fa-gamepad"></i> 遊戲說明</h2>
+            <button class="absolute top-3 right-3 text-3xl font-bold" onclick="toggleInstructions()">×</button>
+
+            <p class="mb-3">歡迎來到撈取挑戰！你的任務是在限時內，撈取到關卡指定的所有「目標」，同時「避開」所有禁忌物品。</p>
+
+            <h3 class="text-xl font-bold mt-4 mb-2"><i class="fas fa-crosshairs"></i> 如何遊玩 (範例):</h3>
+            <ul id="how-to-play-examples" class="list-disc list-inside mb-3 space-y-1">
+                <!-- 這些範例將由 JavaScript 動態生成 -->
+            </ul>
+            <p class="text-sm italic text-gray-400 mb-3">請注意：每個關卡的目標與禁忌物品組合可能不同，以遊戲中顯示為準。</p>
+
+            <h3 class="text-xl font-bold mt-4 mb-2"><i class="fas fa-star"></i> 遊戲提示:</h3>
+            <ul class="list-disc list-inside space-y-1">
+                <li>每個關卡的時間和目標都不同，請仔細查看。</li>
+                <li>遊戲會隨著關卡推進而增加難度，物品移動速度會變快！</li>
+                <li>精準判斷快照時機是獲勝的關鍵！</li>
+                <li><strong class="text-red-400">誤觸禁忌物品會有懲罰，並可能暫時讓你無法操作！</strong></li>
+            </ul>
+            <button class="game-button mt-6 w-full" onclick="toggleInstructions()">我知道了！</button>
+        </div>
+    </div>
+
+    <!-- 背景音樂 Audio Element -->
+    <audio id="background-music" loop preload="auto">
+        <source src="audio/bgm.mp3" type="audio/mpeg">
+        您的瀏覽器不支持音頻元素。請確認 `audio/bgm.mp3` 文件存在。
+    </audio>
+
+    <script>
+        // --- 遊戲全局配置 ---
+        const SCORE_PER_CAPTURE = 100;
+        const BONUS_ITEM_SCORE = 200;
+        const SCALE_FACTOR = 2;
+        const ORIGINAL_IMAGE_DEFINITIONS = {
+            "GOODSHOT": {
+                "path": "item/Good shot.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "Good shot",
+                "isBonus": false
+            },
+            "ITEM_KEY_258CDA14": {
+                "path": "item/人生山耀.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "人生山耀",
+                "isBonus": false
+            },
+            "ITEM_KEY_119FED62": {
+                "path": "item/天地有正氣.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "天地有正氣",
+                "isBonus": false
+            },
+            "ITEM_KEY_2C5980D9": {
+                "path": "item/平安順利.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "平安順利",
+                "isBonus": false
+            },
+            "ITEM_KEY_2ADCCB06": {
+                "path": "item/好野將發.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "好野將發",
+                "isBonus": false
+            },
+            "ITEM_KEY_31063FAE": {
+                "path": "item/好運龍厚哩.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "好運龍厚哩",
+                "isBonus": false
+            },
+            "ITEM_KEY_30D1AEA5": {
+                "path": "item/好運轟隆旺.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "好運轟隆旺",
+                "isBonus": false
+            },
+            "ITEM_KEY_44B9A25E": {
+                "path": "item/好輪一生平安.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "好輪一生平安",
+                "isBonus": false
+            },
+            "ITEM_KEY_160D4CA": {
+                "path": "item/奔跑吧.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "奔跑吧",
+                "isBonus": false
+            },
+            "ITEM_KEY_2D06B70A": {
+                "path": "item/弦琴逸致.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "弦琴逸致",
+                "isBonus": false
+            },
+            "ITEM_KEY_53D204BF": {
+                "path": "item/所在皆荷所在.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "所在皆荷所在",
+                "isBonus": false
+            },
+            "ITEM_KEY_3C2B398A": {
+                "path": "item/相看兩不厭.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "相看兩不厭",
+                "isBonus": false
+            },
+            "ITEM_KEY_38B7BABE": {
+                "path": "item/祥旺來福.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "祥旺來福",
+                "isBonus": false
+            },
+            "ITEM_KEY_39E66066": {
+                "path": "item/窯身一變.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "窯身一變",
+                "isBonus": false
+            },
+            "ITEM_KEY_45E3FDBB": {
+                "path": "item/雙喜臨門.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "雙喜臨門",
+                "isBonus": false
+            },
+            "ITEM_KEY_3FDA91DF": {
+                "path": "item/蟹蟹有您.svg",
+                "size": 60,
+                "speed": 1,
+                "name": "蟹蟹有您",
+                "isBonus": false
+            }
+        };
+        const LEVELS = [
+            {
+                "name": "雙中最可愛校狗祥祥",
+                "duration": 15,
+                "required": [
+                    "ITEM_KEY_38B7BABE"
+                ],
+                "forbidden": [
+                    "ITEM_KEY_39E66066"
+                ],
+                "objectCount": 8,
+                "speedMultiplier": 1
+            },
+            {
+                "name": "雙溪火車轟隆隆",
+                "duration": 12,
+                "required": [
+                    "ITEM_KEY_30D1AEA5",
+                    "ITEM_KEY_45E3FDBB"
+                ],
+                "forbidden": [
+                    "ITEM_KEY_3C2B398A"
+                ],
+                "objectCount": 12,
+                "speedMultiplier": 1.3
+            },
+            {
+                "name": "雙溪有三寶：山藥、毛蟹、野薑花",
+                "duration": 10,
+                "required": [
+                    "ITEM_KEY_2ADCCB06",
+                    "ITEM_KEY_3FDA91DF",
+                    "ITEM_KEY_258CDA14"
+                ],
+                "forbidden": [
+                    "ITEM_KEY_30D1AEA5"
+                ],
+                "objectCount": 15,
+                "speedMultiplier": 1.6
+            },
+            {
+                "name": "雙中最亮眼",
+                "duration": 10,
+                "required": [
+                    "GOODSHOT",
+                    "ITEM_KEY_160D4CA",
+                    "ITEM_KEY_2D06B70A",
+                    "ITEM_KEY_31063FAE"
+                ],
+                "forbidden": [
+                    "ITEM_KEY_44B9A25E"
+                ],
+                "objectCount": 10,
+                "speedMultiplier": 1
+            },
+            {
+                "name": "雙溪神庇佑",
+                "duration": 10,
+                "required": [
+                    "ITEM_KEY_119FED62",
+                    "ITEM_KEY_2C5980D9"
+                ],
+                "forbidden": [
+                    "ITEM_KEY_2ADCCB06",
+                    "ITEM_KEY_3FDA91DF",
+                    "ITEM_KEY_258CDA14"
+                ],
+                "objectCount": 10,
+                "speedMultiplier": 1
+            }
+        ];
+
+        // Game state variables
+        let canvas, ctx;
+        let gameObjects = [];
+        let score = 0;
+        let scoreAtLevelStart = 0; // New: score at the beginning of the current level
+        let timer = 0;
+        let gameInterval; // Stores the requestAnimationFrame ID
+        let currentLevelIndex = 0; // 0-based index
+        let currentLevel;
+        let gameRunning = false;
+        let images = {}; // Store loaded images
+        let lastTimestamp = 0; // For delta time calculation
+
+        let stunned = false; // New: player is temporarily stunned
+        let stunTimer = 0;   // New: duration of stun
+
+        // --- Audio Context for Web Audio API (New: Global for all sounds) ---
+        let audioContext;
+        let bgmAudio;
+        let musicToggleButton;
+        let musicVolumeSlider;
+        let backgroundMusicPlayedOnceSuccessfully = false; // For autoplay handling
+
+        // DOM elements
+        const levelDisplay = document.getElementById('level-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const targetsDisplay = document.getElementById('targets');
+        const forbiddenDisplay = document.getElementById('forbidden');
+        const levelNameDisplay = document.getElementById('level-name');
+        const gameOverlay = document.getElementById('game-overlay');
+        const gameMessage = document.getElementById('game-message');
+        const startButton = document.getElementById('start-button');
+        const restartLevelButton = document.getElementById('restart-level-button'); // New
+        const backToFirstLevelButton = document.getElementById('back-to-first-level-button'); // New
+        const instructionsModal = document.getElementById('instructions-modal');
+        const howToPlayExamples = document.getElementById('how-to-play-examples');
+        const canvasContainer = document.getElementById('canvas-container'); // To add feedback elements
+
+        // --- Audio Functions (Updated/New) ---
+        function playSound(frequency, duration, type = 'sine', decayTime = 0.1, volume = 0.5) {
+            if (!audioContext) {
+                 audioContext = new (window.AudioContext || window.webkitAudioContext)(); // Initialize if not already
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    _createAndPlayOscillator(frequency, duration, type, decayTime, volume);
+                }).catch(e => console.warn("AudioContext resume failed:", e));
+            } else {
+                _createAndPlayOscillator(frequency, duration, type, decayTime, volume);
+            }
+        }
+
+        function _createAndPlayOscillator(frequency, duration, type, decayTime, volume) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + decayTime);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playCollectSound() {
+            playSound(880, 0.1, 'sine', 0.1, 0.4); // High pitch for success
+            setTimeout(() => playSound(1320, 0.1, 'sine', 0.1, 0.4), 50); // Second, higher tone
+        }
+
+        function playPenaltySound() {
+            playSound(200, 0.15, 'sawtooth', 0.15, 0.6); // Low, harsh sound for penalty
+            setTimeout(() => playSound(100, 0.15, 'sawtooth', 0.15, 0.6), 75); // Even lower, more alarming
+        }
+
+        function setupMusicControls() {
+            bgmAudio = document.getElementById('background-music');
+            musicToggleButton = document.getElementById('music-toggle-button');
+            musicVolumeSlider = document.getElementById('music-volume-slider');
+
+            bgmAudio.volume = parseFloat(musicVolumeSlider.value);
+            updateVolumeSliderFill();
+            updateMusicButtonIcon();
+
+            musicToggleButton.onclick = () => toggleBackgroundMusic();
+            musicVolumeSlider.oninput = () => {
+                bgmAudio.volume = parseFloat(musicVolumeSlider.value);
+                updateMusicButtonIcon();
+                updateVolumeSliderFill();
+                // If volume is turned up and music was paused, attempt to play
+                if (bgmAudio.volume > 0 && bgmAudio.paused && backgroundMusicPlayedOnceSuccessfully) {
+                    bgmAudio.play().then(() => {
+                        backgroundMusicPlayedOnceSuccessfully = true;
+                        updateMusicButtonIcon();
+                    }).catch(e => {
+                        console.warn("背景音樂無法在調整音量後播放:", e.message);
+                        updateMusicButtonIcon();
+                    });
+                }
+            };
+
+            // Attempt autoplay on initial load, but don't block
+            bgmAudio.play().then(() => {
+                backgroundMusicPlayedOnceSuccessfully = true;
+                updateMusicButtonIcon();
+            }).catch(e => {
+                console.warn("背景音樂自動播放被阻擋 (首次載入):", e.message);
+            });
+        }
+
+        function updateMusicButtonIcon() {
+            if (bgmAudio.paused || bgmAudio.volume === 0) {
+                musicToggleButton.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            } else {
+                musicToggleButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+            }
+        }
+
+        function updateVolumeSliderFill() {
+            const volume = parseFloat(musicVolumeSlider.value);
+            const min = parseFloat(musicVolumeSlider.min);
+            const max = parseFloat(musicVolumeSlider.max);
+            const percentage = ((volume - min) / (max - min)) * 100;
+            musicVolumeSlider.style.background = `linear-gradient(to right, #8a2be2 0%, #00c4ff ${percentage}%, rgba(255,255,255,0.2) ${percentage}%, rgba(255,255,255,0.2) 100%)`;
+        }
+
+        function toggleBackgroundMusic() {
+            if (bgmAudio.paused) {
+                bgmAudio.play().then(() => {
+                    backgroundMusicPlayedOnceSuccessfully = true;
+                    updateMusicButtonIcon();
+                }).catch(e => {
+                    console.error("背景音樂播放失敗 (用戶點擊):", e);
+                    updateMusicButtonIcon();
+                });
+            } else {
+                bgmAudio.pause();
+                updateMusicButtonIcon();
+            }
+        }
+
+        function ensureBackgroundMusicPlays() {
+            if (!audioContext) { // Initialize AudioContext if not already
+                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().catch(e => console.warn("AudioContext resume failed:", e));
+            }
+            if (bgmAudio.paused && bgmAudio.volume > 0) {
+                bgmAudio.play().then(() => {
+                    backgroundMusicPlayedOnceSuccessfully = true;
+                    updateMusicButtonIcon();
+                }).catch(e => {
+                    console.warn("背景音樂恢復播放失敗 (可能被瀏覽器阻擋):", e.message);
+                    updateMusicButtonIcon();
+                });
+            } else if (!bgmAudio.paused && bgmAudio.volume > 0) {
+                backgroundMusicPlayedOnceSuccessfully = true;
+            }
+        }
+
+        // --- Visual Feedback Functions ---
+        function showScorePopup(x, y, scoreValue, isPositive) {
+            const popup = document.createElement('div');
+            popup.classList.add('score-popup');
+            popup.textContent = (isPositive ? '+' : '-') + Math.abs(scoreValue);
+            popup.style.color = isPositive ? 'var(--score-positive-color)' : 'var(--score-negative-color)';
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+            canvasContainer.appendChild(popup);
+
+            // Adjust position for animation start (slightly above initial click)
+            const initialTop = y - 10;
+            popup.style.top = `${initialTop}px`;
+
+            setTimeout(() => popup.remove(), 1000); // Remove after animation
+        }
+
+        function showParticleEffect(x, y, count = 10, color = 'var(--particle-positive-color)') { // Gold for capture
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle-effect');
+                particle.style.backgroundColor = color;
+                particle.style.width = `${Math.random() * 8 + 4}px`; // Random size
+                particle.style.height = particle.style.width;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+
+                const angle = Math.random() * 2 * Math.PI;
+                const distance = Math.random() * 50 + 20;
+                const dx = distance * Math.cos(angle);
+                const dy = distance * Math.sin(angle);
+
+                particle.style.setProperty('--dx', `${dx}px`);
+                particle.style.setProperty('--dy', `${dy}px`);
+
+                canvasContainer.appendChild(particle);
+                setTimeout(() => particle.remove(), 800);
+            }
+        }
+
+        function flashScreen(color = 'var(--screen-flash-color)', duration = 200) { // Red for penalty
+            const flash = document.createElement('div');
+            flash.classList.add('screen-flash');
+            flash.style.animationDuration = `${duration}ms`; // Apply animation duration dynamically
+            canvasContainer.appendChild(flash);
+            setTimeout(() => flash.remove(), duration);
+        }
+
+        // --- Game Object Class (unchanged) ---
+        class GameObject {
+            constructor(definition, canvasWidth, canvasHeight) {
+                this.key = definition.key; // e.g., REN_SHENG_SHAN_YAO
+                this.name = definition.name;
+                this.image = images[this.key];
+                this.originalSize = definition.size / SCALE_FACTOR; // Store original base size (size in config is already scaled)
+                this.scaledSize = definition.size; // Size after applying SCALE_FACTOR from config
+                this.width = this.scaledSize;
+                this.height = this.scaledSize;
+                this.speed = definition.speed; // Base speed multiplier
+                this.isBonus = definition.isBonus;
+                this.type = 'normal'; // default, can be 'required' or 'forbidden' per level
+
+                // Random initial position
+                this.x = Math.random() * (canvasWidth - this.width);
+                this.y = Math.random() * (canvasHeight - this.height);
+
+                // Random initial direction (speedX, speedY)
+                const angle = Math.random() * 2 * Math.PI;
+                const baseSpeed = 0.5 * SCALE_FACTOR; // Adjust base speed for a more consistent feel
+                this.speedX = baseSpeed * Math.cos(angle);
+                this.speedY = baseSpeed * Math.sin(angle);
+            }
+
+            draw(ctx) {
+                if (this.image && this.image.complete) {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                } else {
+                    // Fallback for missing image
+                    ctx.fillStyle = '#FF00FF'; // Magenta
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.fillStyle = 'black';
+                    ctx.fillText(this.name, this.x + 5, this.y + this.height / 2);
+                }
+            }
+
+            update(deltaTime, canvasWidth, canvasHeight, levelSpeedMultiplier) {
+                const effectiveSpeed = this.speed * levelSpeedMultiplier;
+                // deltaTime / 16.67 (approx 1 frame at 60fps) ensures speed is frame-rate independent
+                this.x += this.speedX * effectiveSpeed * (deltaTime / 16.67);
+                this.y += this.speedY * effectiveSpeed * (deltaTime / 16.67);
+
+                // Bounce off walls
+                if (this.x < 0 || this.x + this.width > canvasWidth) {
+                    this.speedX *= -1;
+                    // Correct position to prevent sticking to edges
+                    this.x = Math.max(0, Math.min(this.x, canvasWidth - this.width));
+                }
+                if (this.y < 0 || this.y + this.height > canvasHeight) {
+                    this.speedY *= -1;
+                    // Correct position to prevent sticking to edges
+                    this.y = Math.max(0, Math.min(this.y, canvasHeight - this.height));
+                }
+            }
+
+            // Check if point (px, py) is inside the object
+            contains(px, py) {
+                return px >= this.x && px <= this.x + this.width &&
+                       py >= this.y && py <= this.y + this.height;
+            }
+        }
+
+        // --- Game Initialization and Core Logic ---
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Set canvas dimensions based on container or fixed values
+            canvas.width = canvasContainer.clientWidth;
+            canvas.height = 400; // Fixed height, width is responsive
+
+            // Add event listener once during initialization.
+            // gameRunning flag will control if clicks are processed.
+            canvas.addEventListener('pointerdown', handleCanvasClick);
+
+            preloadImages().then(() => {
+                console.log("All images preloaded.");
+                setupMusicControls(); // NEW: Setup music controls after DOM is ready
+                resetGame(); // Reset game state (score, level index) and show initial overlay
+                renderInstructions();
+                updateUI(); // Ensure UI is updated after preload and reset
+            }).catch(error => {
+                console.error("Failed to preload images:", error);
+                gameMessage.textContent = "圖片載入失敗，請檢查配置。";
+                startButton.disabled = true;
+            });
+        }
+
+        async function preloadImages() {
+            const imagePromises = [];
+            for (const key in ORIGINAL_IMAGE_DEFINITIONS) {
+                if (ORIGINAL_IMAGE_DEFINITIONS.hasOwnProperty(key)) {
+                    const imgDef = ORIGINAL_IMAGE_DEFINITIONS[key];
+                    const img = new Image();
+                    img.src = imgDef.path; // Path in the generated ZIP is item/itemNNN.ext
+                    images[key] = img;
+
+                    const promise = new Promise((resolve, reject) => {
+                        img.onload = () => resolve();
+                        img.onerror = () => {
+                            console.warn(`Failed to load image: ${imgDef.path} for key ${key}. Using fallback.`);
+                            // Fallback to a transparent GIF to prevent broken image icon
+                            img.src = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; 
+                            resolve(); // Resolve anyway to not block the game, but log a warning
+                        };
+                    });
+                    imagePromises.push(promise);
+                }
+            }
+            await Promise.all(imagePromises);
+        }
+
+        function resetGame() {
+            score = 0;
+            scoreAtLevelStart = 0; // Reset for a fresh start
+            currentLevelIndex = 0; // Go back to the first level
+            updateUI();
+            stopGame(); // Stop any active game loop
+            showInitialOverlay("點擊開始按鈕，開啟撈取挑戰！", "開始遊戲", () => startLevel(0));
+        }
+
+        function startLevel(levelIdx) {
+            ensureBackgroundMusicPlays(); // NEW: Ensure music plays when starting level
+            if (LEVELS.length === 0) {
+                showInitialOverlay("沒有設定關卡，無法開始遊戲！", "重新設定", resetGame);
+                return;
+            }
+            if (levelIdx >= LEVELS.length) {
+                endGame(true); // All levels completed
+                return;
+            }
+
+            currentLevelIndex = levelIdx; // Set the current level index
+            scoreAtLevelStart = score; // Save current score before starting new level
+            gameRunning = true;
+            stunned = false; // Ensure player is not stunned at start of level
+            gameOverlay.classList.add('hidden');
+            loadLevel(currentLevelIndex);
+            lastTimestamp = 0; // Reset lastTimestamp for accurate deltaTime
+            gameLoop(0); // Start the game loop
+        }
+
+        function stopGame() {
+            gameRunning = false;
+            cancelAnimationFrame(gameInterval); // Stop the animation frame loop
+            // Do NOT remove the event listener here, it stays active but gameRunning prevents processing
+        }
+
+        function loadLevel(levelIndex) {
+            currentLevel = LEVELS[levelIndex];
+            timer = currentLevel.duration; // Use the configured duration
+            gameObjects = [];
+            
+            // Collect all possible object keys
+            const allObjectKeys = Object.keys(ORIGINAL_IMAGE_DEFINITIONS);
+            
+            // Filter objects for required and forbidden only
+            const availableObjectKeys = allObjectKeys.filter(key => 
+                currentLevel.required.includes(key) || currentLevel.forbidden.includes(key)
+            );
+
+            if (availableObjectKeys.length === 0 && (currentLevel.required.length > 0 || currentLevel.forbidden.length > 0)) {
+                alert(`關卡 "${currentLevel.name}" 沒有可用的目標或禁忌物品定義，請檢查物品配置！`);
+                endGame(false); // Game cannot proceed if level config is invalid
+                return;
+            }
+
+            for (let i = 0; i < currentLevel.objectCount; i++) {
+                const randomKey = availableObjectKeys[Math.floor(Math.random() * availableObjectKeys.length)];
+                const definition = { ...ORIGINAL_IMAGE_DEFINITIONS[randomKey], key: randomKey };
+                const obj = new GameObject(definition, canvas.width, canvas.height); // Pass canvas dimensions
+                
+                // Assign type based on current level's requirements
+                if (currentLevel.required.includes(randomKey)) {
+                    obj.type = 'required';
+                } else if (currentLevel.forbidden.includes(randomKey)) {
+                    obj.type = 'forbidden';
+                }
+                gameObjects.push(obj);
+            }
+            updateUI();
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+
+            // Initialize lastTimestamp on the first call to prevent large deltaTime
+            if (lastTimestamp === 0) {
+                lastTimestamp = timestamp;
+            }
+
+            const deltaTime = timestamp - lastTimestamp;
+            lastTimestamp = timestamp;
+
+            update(deltaTime);
+            draw();
+
+            gameInterval = requestAnimationFrame(gameLoop);
+        }
+
+        function update(deltaTime) {
+            // Update timer
+            timer -= deltaTime / 1000; // Convert ms to seconds
+            if (timer <= 0) {
+                timer = 0;
+                endGame(false); // Time's up
+                return;
+            }
+
+            // Update stun timer if active
+            if (stunned) {
+                stunTimer -= deltaTime;
+                if (stunTimer <= 0) {
+                    stunned = false;
+                    stunTimer = 0;
+                }
+            }
+
+            // Update game objects
+            gameObjects.forEach(obj => {
+                obj.update(deltaTime, canvas.width, canvas.height, currentLevel.speedMultiplier);
+            });
+
+            updateUI();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            gameObjects.forEach(obj => obj.draw(ctx));
+        }
+
+        function handleCanvasClick(event) {
+            ensureBackgroundMusicPlays(); // NEW: Ensure music plays on user interaction
+            if (!gameRunning || stunned) return; // Only process clicks if game is running and not stunned
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const clickX = (event.clientX - rect.left) * scaleX;
+            const clickY = (event.clientY - rect.top) * scaleY;
+
+            let capturedObject = null;
+            let capturedObjectIndex = -1; // To remove from array
+            // Iterate in reverse to capture topmost object
+            for (let i = gameObjects.length - 1; i >= 0; i--) {
+                if (gameObjects[i].contains(clickX, clickY)) {
+                    capturedObject = gameObjects[i];
+                    capturedObjectIndex = i;
+                    break;
+                }
+            }
+
+            if (capturedObject) {
+                // Get click position relative to canvas container for popups
+                const containerRect = canvasContainer.getBoundingClientRect();
+                const popupX = event.clientX - containerRect.left;
+                const popupY = event.clientY - containerRect.top;
+
+                if (capturedObject.type === 'required') {
+                    let points = SCORE_PER_CAPTURE;
+                    if (capturedObject.isBonus) {
+                        points += BONUS_ITEM_SCORE;
+                    }
+                    score += points;
+                    playCollectSound();
+                    showScorePopup(popupX, popupY, points, true);
+                    showParticleEffect(capturedObject.x + capturedObject.width / 2, capturedObject.y + capturedObject.height / 2); // Center of object
+                } else if (capturedObject.type === 'forbidden') {
+                    const penalty = SCORE_PER_CAPTURE; // Use base score for penalty
+                    score = Math.max(0, score - penalty); // Penalize, but not below zero
+                    playPenaltySound();
+                    flashScreen(); // Red screen flash
+                    showScorePopup(popupX, popupY, penalty, false);
+                    stunned = true; // Stun the player
+                    stunTimer = 1000; // 1 second stun duration
+                }
+                
+                gameObjects.splice(capturedObjectIndex, 1); // Remove object from game
+                updateUI();
+            }
+
+            // Check for level completion
+            const remainingRequired = gameObjects.filter(obj => obj.type === 'required').length;
+            if (remainingRequired === 0) {
+                stopGame(); // Stop current level game loop
+
+                const completedLevelNumber = currentLevelIndex + 1; // 1-based number for display
+
+                currentLevelIndex++; // Advance to the *next* level index
+
+                if (currentLevelIndex < LEVELS.length) {
+                    showLevelCompleteOverlay(`恭喜！關卡 ${completedLevelNumber} 完成！得分：${score} \n\n點擊進入下一關...`, () => startLevel(currentLevelIndex));
+                } else {
+                    endGame(true); // All levels completed
+                }
+            }
+        }
+
+        function endGame(allLevelsCompleted) {
+            stopGame(); // Ensure game loop is stopped
+            if (allLevelsCompleted) {
+                showFinalScoreOverlay(`恭喜您！完成所有關卡！總得分：${score}`, "重新挑戰", resetGame);
+            } else {
+                showGameOverOverlay(`遊戲結束！您的得分：${score}`, 
+                                    () => { 
+                                        score = scoreAtLevelStart; // Revert score to start of level
+                                        startLevel(currentLevelIndex); 
+                                    }, 
+                                    resetGame);
+            }
+        }
+
+        // --- UI Update Functions ---
+        function updateUI() {
+            levelDisplay.textContent = currentLevelIndex + 1; // Display 1-based level number
+            timerDisplay.textContent = timer.toFixed(1);
+            scoreDisplay.textContent = score;
+
+            if (currentLevel) {
+                levelNameDisplay.textContent = currentLevel.name;
+
+                const requiredNames = currentLevel.required.map(key => {
+                    const objDef = ORIGINAL_IMAGE_DEFINITIONS[key];
+                    if (objDef && images[key] && images[key].src) {
+                        return `<span class="mission-item-wrapper"><img src="${images[key].src}" alt="${objDef.name}" class="item-icon-inline">${objDef.name}</span>`;
+                    }
+                    return `<span class="mission-item-wrapper">${objDef ? objDef.name : key}</span>`; // Fallback for definition or key
+                }).join(', ');
+                targetsDisplay.innerHTML = requiredNames || '無';
+
+                const forbiddenNames = currentLevel.forbidden.map(key => {
+                    const objDef = ORIGINAL_IMAGE_DEFINITIONS[key];
+                    if (objDef && images[key] && images[key].src) {
+                        return `<span class="mission-item-wrapper"><img src="${images[key].src}" alt="${objDef.name}" class="item-icon-inline">${objDef.name}</span>`;
+                    }
+                    return `<span class="mission-item-wrapper">${objDef ? objDef.name : key}</span>`; // Fallback
+                }).join(', ');
+                forbiddenDisplay.innerHTML = forbiddenNames || '無';
+
+            } else {
+                levelNameDisplay.textContent = "遊戲尚未開始";
+                targetsDisplay.textContent = "...";
+                forbiddenDisplay.textContent = "...";
+            }
+        }
+
+        // Modified overlay functions to handle multiple buttons
+        function hideAllOverlayButtons() {
+            startButton.classList.add('hidden');
+            restartLevelButton.classList.add('hidden');
+            backToFirstLevelButton.classList.add('hidden');
+        }
+
+        function showInitialOverlay(message, buttonText, buttonAction) {
+            gameMessage.innerHTML = message;
+            hideAllOverlayButtons();
+            startButton.textContent = buttonText;
+            startButton.onclick = buttonAction;
+            startButton.classList.remove('hidden');
+            gameOverlay.classList.remove('hidden');
+        }
+
+        function showLevelCompleteOverlay(message, nextLevelAction) {
+            gameMessage.innerHTML = message;
+            hideAllOverlayButtons();
+            startButton.textContent = "下一關";
+            startButton.onclick = nextLevelAction;
+            startButton.classList.remove('hidden');
+            gameOverlay.classList.remove('hidden');
+        }
+
+        function showGameOverOverlay(message, retryCurrentLevelAction, backToFirstLevelAction) {
+            gameMessage.innerHTML = message;
+            hideAllOverlayButtons();
+            restartLevelButton.onclick = retryCurrentLevelAction;
+            backToFirstLevelButton.onclick = backToFirstLevelAction;
+            restartLevelButton.classList.remove('hidden');
+            backToFirstLevelButton.classList.remove('hidden');
+            gameOverlay.classList.remove('hidden');
+        }
+
+        function showFinalScoreOverlay(message, restartGameAction) {
+            gameMessage.innerHTML = message;
+            hideAllOverlayButtons();
+            startButton.textContent = "重新挑戰";
+            startButton.onclick = restartGameAction;
+            startButton.classList.remove('hidden');
+            gameOverlay.classList.remove('hidden');
+        }
+
+
+        // --- Instructions Modal ---
+        function toggleInstructions() {
+            instructionsModal.classList.toggle('hidden');
+        }
+
+        function renderInstructions() {
+            renderHowToPlayExamples(); // Call this once when images are loaded
+        }
+
+        function renderHowToPlayExamples() {
+            howToPlayExamples.innerHTML = ''; // Clear existing examples
+
+            if (LEVELS.length === 0) {
+                howToPlayExamples.innerHTML = `<li>遊戲未設定任何關卡，無法提供範例。</li>`;
+                return;
+            }
+
+            // Use the first level as an example for instructions
+            const exampleLevel = LEVELS[0];
+            const targetItems = exampleLevel.required;
+            const forbiddenItems = exampleLevel.forbidden;
+
+            // Example for required items
+            if (targetItems.length > 0) {
+                const targetExamplesHtml = targetItems.map(key => {
+                    const objDef = ORIGINAL_IMAGE_DEFINITIONS[key];
+                    if (objDef && images[key] && images[key].src) {
+                        const bonusText = objDef.isBonus ? ` (獎勵物品)` : '';
+                        return `<span class="mission-item-wrapper"><img src="${images[key].src}" alt="${objDef.name}" class="item-icon-inline">${objDef.name}</span>${bonusText}`;
+                    }
+                    return `<span class="mission-item-wrapper">${objDef ? objDef.name : key}</span>`; // Fallback for definition or key
+                }).join(', ');
+                howToPlayExamples.innerHTML += `<li>點擊或輕觸以下物品之一來成功撈取並得分：${targetExamplesHtml}</li>`;
+            } else {
+                howToPlayExamples.innerHTML += `<li>點擊或輕觸目標物品以成功撈取並得分。</li>`;
+            }
+
+            // Example for forbidden items
+            if (forbiddenItems.length > 0) {
+                const forbiddenExamplesHtml = forbiddenItems.map(key => {
+                    const objDef = ORIGINAL_IMAGE_DEFINITIONS[key];
+                    if (objDef && images[key] && images[key].src) {
+                        return `<span class="mission-item-wrapper"><img src="${images[key].src}" alt="${objDef.name}" class="item-icon-inline">${objDef.name}</span>`;
+                    }
+                    return `<span class="mission-item-wrapper">${objDef ? objDef.name : key}</span>`; // Fallback
+                }).join(', ');
+                howToPlayExamples.innerHTML += `<li>**請勿**點擊或輕觸以下物品，否則會扣分並可能導致暫時無法操作：${forbiddenExamplesHtml}</li>`;
+            } else {
+                howToPlayExamples.innerHTML += `<li>請勿點擊或輕觸禁忌物品，否則會扣分！</li>`;
+            }
+        }
+
+
+        // --- Event Listeners and Initial Setup ---
+        window.onload = initGame;
+
+        // Ensure canvas resizes with window (if you want responsive width)
+        window.addEventListener('resize', () => {
+            if (canvas) {
+                const currentWidth = canvas.width;
+                canvas.width = canvasContainer.clientWidth;
+                // If the width changed significantly, redraw
+                if (Math.abs(currentWidth - canvas.width) > 5) { // Threshold of 5px
+                    if (gameRunning) {
+                        draw();
+                    } else if (gameObjects.length > 0) {
+                         // If game is paused/overlay, but objects are present, draw once
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        gameObjects.forEach(obj => obj.draw(ctx));
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
